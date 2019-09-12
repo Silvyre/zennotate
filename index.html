@@ -7,28 +7,33 @@
   <title>Zennotate</title>
 </head>
 <body>
-  <div id="note" contenteditable></div>
+  <main id="note" contenteditable></div>
 
   <script src="https://unpkg.com/filer/dist/filer.min.js"></script>
   <script>
     const fs = new Filer.FileSystem();
     window.addEventListener('DOMContentLoaded', (event) => {
       console.log('DOM fully loaded and parsed');
+      let msg = "Thank you for using Zennotate!";
+
       fs.readFile('/note', 'utf8', (err, data) => {
-        let msg = "Thank you for using Zennotate!";
         document.getElementById("note").textContent = (!err && data) ? data : msg;
       });
 
       window.setInterval(() => {
-        fs.writeFile('/note', 'utf8', (err) => {
-          if (err) {
-            document.querySelector("body").appendChild(
-              document.createElement("p").appendChild(
-                document.createTextNode("Zennotate encountered an error.")
-              )
-            );
+        fs.writeFile(
+          '/note',
+          document.getElementById("note").textContent,
+          (err) => {
+            if (err) {
+              document.querySelector("body").appendChild(
+                document.createElement("strong").appendChild(
+                  document.createTextNode("Zennotate encountered an error.")
+                )
+              );
+            }
           }
-        })
+        )
       }, 3000);
     });
   </script>
