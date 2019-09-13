@@ -8,23 +8,35 @@
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script> 
+  
+  <!-- Didact Gothic by ossobuffo: https://github.com/ossobuffo/didact-gothic -->
+  <link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Didact Gothic'>
+
+  <!-- legitRipple by Matthias Vogt -->
+  <link rel="stylesheet" type="text/css" href="https://matthias-vogt.github.io/legitRipple.js/css/ripple.css">
 
   <title>Zennotate</title>
-  
+
   <style type="text/css">
     body {
       background-color: #ddd;
+      font-family: 'Didact Gothic', sans-serif;
     }
 
     #note {
       background-color: #e9ecef;
-      min-height: 100px;
+      min-height: 92px;
       padding: 10px;
-
       word-wrap: break-word;
       overflow-wrap: break-word;
       white-space: normal;
     }
+
+    /* slower rippling */
+    .legitRipple-ripple {
+      -webkit-transition: width 0.75s linear, opacity 0.9s ease-out !important;
+      transition: width 0.75s linear, opacity 0.9s ease-out !important;
+	  }
   </style>
 </head>
 <body>
@@ -32,39 +44,102 @@
     <h1>Zennotate</h1>
   </div>
   <div class="container">
-    <div class="row">
+    <div id="content" class="row">
       <main id="note" contenteditable class="col-sm-6"></main>
+      <button type="button" id="save" class="col-sm-2 btn btn-primary btn-ripple legitRipple">Save (Ctrl+S)</button>
     </div>
   </div>
 
+  <!-- https://github.com/filerjs/filer -->
   <script src="https://unpkg.com/filer/dist/filer.min.js"></script>
+
+  <!-- legitRipple by Matthias Vogt -->
+  <script src="https://matthias-vogt.github.io/legitRipple.js/js/ripple.js"></script>
+
   <script>
+    // manually ripple the Save button when Ctrl+S is pressed
+    // https://github.com/matthias-vogt/legitRipple.js/blob/gh-pages/js/demo.js#L69-L82
+    $(document).keydown((event) => {
+      if((event.ctrlKey || event.metaKey) && event.which == 83) {
+          event.preventDefault();
+          $("#save")
+          .click()
+          .ripple({
+            fixedPos: [
+                $("h1").offset().left,
+                $("h1").offset().top,
+            ],
+            adaptPos: false
+          })
+          .trigger("mousedown")
+          .ripple({  // remove customized behaviour
+              unbind: true
+          })
+          .ripple(); // retore default behaviour
+                
+          // remove rendered ripple
+          setTimeout(() => {
+            $("#save").children(".legitRipple-ripple").remove();
+          }, 240 * 4);
+
+          return false;
+      }
+    });
+
     const fs = new Filer.FileSystem();
-    window.addEventListener('DOMContentLoaded', (event) => {
-      console.log('DOM fully loaded and parsed');
+    $(document).ready((event) => {
+      // manually ripple the header onload
+      $(".jumbotron")
+      .ripple({
+        fixedPos: [
+            $("button").offset().left,
+            $("button").offset().top,
+        ],
+        adaptPos: true
+      })
+      .trigger("mousedown")
+      .ripple({  // remove customized behaviour
+          unbind: true
+      })
+      .ripple(); // retore default behaviour
+
+      // remove rendered ripple
+      // setTimeout(() => {
+      //   $(".jumbotron").children(".legitRipple-ripple").remove();
+      // }, 240 * 4);
+
       let msg = "Thank you for using Zennotate!";
+      console.log(msg);
 
       fs.readFile('/note', 'utf8', (err, data) => {
-        let e = document.getElementById("note");
-        e.textContent = (!err && data) ? data : msg;
-        e.focus();
+        $("#note").html((!err && data) ? data : msg).focus();
       });
 
-      window.setInterval(() => {
-        fs.writeFile(
-          '/note',
-          document.getElementById("note").textContent,
+
+      $("#save").click(() => {
+        // console.log((new Date).toDateString(), '\n', $("#note").text());
+        fs.writeFile('/note',
+          $("#note").html(),
           (err) => {
             if (err) {
-              document.querySelector("body").appendChild(
-                document.createElement("strong").appendChild(
-                  document.createTextNode("Zennotate encountered an error.")
-                )
-              );
+              // construct and display dismissable alert
+              let alert = document.createElement("div");
+              alert.className = "col-sm-6 alert alert-danger alert-dismissible";
+              let btn = document.createElement("button");
+              btn.type = "button";
+              btn.className = "clone";
+              btn.data_dismiss = "alert";
+              btn.innerHTML = "Zennotate encountered an error and could not save your note.";
+              alert.appendChild(btn);
+              let content = document.getElementById("content");
+              content.appendChild(alert);
             }
           }
         )
-      }, 3000);
+      });
+
+      // bind rippling functionality
+      $("#save, #note").ripple();
     });
   </script>
 </body>
